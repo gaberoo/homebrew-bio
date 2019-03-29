@@ -14,8 +14,14 @@ class Iqtree < Formula
   depends_on "cmake" => :build
   depends_on "eigen" => :build # header only C++ library
   depends_on "gsl"   => :build # static linking
-  depends_on "gcc" if OS.mac? # for openmp
-  depends_on "zlib" unless OS.mac?
+
+  if OS.mac?
+    depends_on "gcc" # for openmp
+  else
+    depends_on "zlib"
+  end
+
+  depends_on "open-mpi" => :optional
 
   fails_with :clang # needs openmp
 
@@ -29,10 +35,19 @@ class Iqtree < Formula
         "${CMAKE_EXE_LINKER_FLAGS_RELEASE}"
     end
 
+    if build.with? "open-mpi"
+      mkdir "build-open-mpi" do
+        system "cmake", "..", "-DIQTREE_FLAGS=mpi", *std_cmake_args
+        system "make"
+      end
+    end
+
     mkdir "build" do
       system "cmake", "..", "-DIQTREE_FLAGS=omp", *std_cmake_args
       system "make"
     end
+
+    bin.install "build-open-mpi/iqtree-mpi" if build.with? "open-mpi"
     bin.install "build/iqtree"
   end
 
